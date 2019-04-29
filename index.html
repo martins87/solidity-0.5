@@ -1,0 +1,157 @@
+<!doctype html>
+<html>
+<head>
+    <title>MyDapp</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="packages/web3/src/Web3.js"></script>
+    <script>
+        // https://github.com/yakkomajuri/certfy.me/blob/master/website/public/javascripts/intermediate.js
+        // https://github.com/falehenrique/eth_dapp/tree/curso/goblockchain_wb
+        // https://medium.com/pixelpoint/track-blockchain-transactions-like-a-boss-with-web3-js-c149045ca9bf
+
+        var account;
+        const contractAddress = "0x2d42d87bfb8fe08f7a2c2ecc33762fef538ef871";
+        const contractAbi = [
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "_number",
+				"type": "uint256"
+			}
+		],
+		"name": "setNumber",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "getNumber",
+		"outputs": [
+			{
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "number",
+		"outputs": [
+			{
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	}
+];
+        var contract;
+        
+        window.addEventListener('load', () => {
+
+            // Modern dapp browsers...
+            if (window.ethereum) {
+                window.web3 = new Web3(ethereum);
+                try {
+                    // Request account access if needed
+                    // await ethereum.enable();
+                    // Acccounts now exposed
+                    web3.eth.sendTransaction({/* ... */});
+                } catch (error) {
+                    // User denied account access...
+                }
+            }
+            // Legacy dapp browsers...
+            else if (window.web3) {
+                window.web3 = new Web3(web3.currentProvider);
+                // Acccounts always exposed
+                web3.eth.sendTransaction({/* ... */});
+            }
+            // Non-dapp browsers...
+            else {
+                console.log('Non-Ethereum browser detected. You should consider trying MetaMask!');
+            }
+
+            contract = web3.eth.contract(contractAbi).at(contractAddress);
+
+            // contract.number.call((error, result) => {
+            //     if(error) {
+            //         console.log(error);
+            //     }
+            //     $('#data').text(result);
+            // });
+
+            contract.number(function(err, result) {
+                $('#data').text(result);
+            })
+
+            // console.log(contract.address);
+
+            web3.eth.getAccounts(function(error, result) {
+                if(error) {
+                    console.log(error);
+                } else {
+                    account = result;
+                    $('#address').text(account);
+                }
+            });
+        });
+
+        function updateNumber() {
+            let newNumber = $('#newNumber').val();
+            if(!isNaN(newNumber)) {
+                contract.setNumber(newNumber, function(error, result) {
+                    if(error) {
+                        console.log(error);
+                    } else {
+                        console.log(result);
+                    }
+                });
+            } else {
+                alert('Data provided is not a number');
+            }
+        }
+
+        function showBalance() {
+            let acc = $('#account').val();
+            web3.eth.getBalance(acc, function(error, result) {
+                if(error) {
+                    console.log(error);
+                } else {
+                    $('#balance').text( web3.fromWei(result, 'ether') + ' ETH');
+                    console.log('Balance: ' + result);
+                }
+            });
+        }
+    </script>
+</head>
+<body>
+    </script>
+    <h1>Interacting with a contract</h1>
+
+    Account: <span id="address"></span><br />
+    Number: <span id="data"></span><br/>
+    <input type="text" id="newNumber" size='40' placeholder="Enter new number to be stored..." />
+    <button onclick="updateNumber()">Update number</button><br /><br />
+
+    <input type="text" id="account" size='40' placeholder="Enter account address..." />
+    <button onclick="showBalance()">Show balance</button><br />
+    Balance: <span id="balance"></span><br />
+</body>
+</html>
