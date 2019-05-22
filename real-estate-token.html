@@ -1,0 +1,206 @@
+<!doctype html>
+<html>
+<head>
+    <title>Real Estate Token</title>
+    <!-- http://jsfiddle.net/KJQ9K/554/ -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <!-- <script src="packages/web3/src/Web3.js"></script> -->
+    <script>
+
+        var account;
+
+        // SimpleICO contract
+        // https://pastebin.com/raw/whAeHQbz
+
+        // Real Estate Token contract address
+        const contractAddress = "0x5f5c6b445be2721facccfef98c746e1e61ea6eac";
+
+        // Real Estate Token contract ABI
+        const contractAbi = [
+	{
+		"constant": false,
+		"inputs": [],
+		"name": "buyTokens",
+		"outputs": [],
+		"payable": true,
+		"stateMutability": "payable",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [],
+		"name": "withDrawFunds",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"name": "initialSupply",
+				"type": "uint256"
+			}
+		],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "getBalance",
+		"outputs": [
+			{
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "getContractBalance",
+		"outputs": [
+			{
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	}
+];
+        
+        // instance of the Smart Contract
+        var contract;
+
+        // account address
+        var accountAddress;
+
+        // account balance
+        var balance;
+        
+        // initialize connection with MetaMask
+        window.addEventListener('load', () => {
+
+            // Modern dapp browsers...
+            if (window.ethereum) {
+                window.web3 = new Web3(ethereum);
+                try {
+                    web3.eth.sendTransaction({/* ... */});
+                } catch (error) {}
+            }
+            else if (window.web3) {
+                window.web3 = new Web3(web3.currentProvider);
+                web3.eth.sendTransaction({/* ... */});
+            }
+            else {
+                console.log('Non-Ethereum browser detected. You should consider trying MetaMask!');
+            }
+
+            // contract instance
+            contract = web3.eth.contract(contractAbi).at(contractAddress);
+
+            // get address from MetaMask
+            web3.eth.getAccounts(function(error, result) {
+                if(error) {
+                    console.log(error);
+                } else {
+                    accountAddress = result;
+                    $('#address').text(accountAddress);
+                    console.log('Account address: ' + accountAddress);
+
+                    let acc = accountAddress+'';
+                    acc = acc.substring(2, acc.length)
+
+                    // get account balance in Ether
+                    web3.eth.getBalance(acc, function(error, res) {
+                        if(error) {
+                            console.log(error);
+                        } else {
+                            balance = res;
+                            $('#ETHbalance').text( web3.fromWei(balance, 'ether') + ' ETH');
+                        }
+                    });
+                }
+            });
+            
+            // get token balance
+            contract.getBalance(function(error, result) {
+                let tokenAmount = formatNumber(result);
+                $('#RETBalance').text(tokenAmount + ' RET');
+            })
+
+        });
+
+        function formatNumber(num) {
+            return num.toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,')
+        }
+
+        function buyRETTokens() {
+            // amount in Ether
+            let amount = $('#amountOfETHToSend').val()
+            let balanceInEther = web3.fromWei(balance, 'ether')
+
+            if(!isNaN(amount)) {
+                if(amount < balanceInEther) {
+                    
+                    // contract.buyTokens(function(error, result) {
+                    let amountInWei = web3.toWei(amount, 'ether');
+
+                    let txObject = {
+                        'value' : amountInWei,
+                        'input' : '0x44616e69656c'
+                    };
+
+                    // call function buyTokens() from contract
+                    contract.buyTokens.sendTransaction(txObject, function(error, result){
+                        if(error) {
+                            console.log(error)
+                        } else {
+                            $('#txHash').val(result)
+                        }
+                    });
+
+                } else {
+                    alert('Insufficient funds')
+                }
+            } else {
+                alert('Input is not a number');
+            }
+        }
+
+        // let txHash = '0x2b0405ae29875c58434397371fc71c4f5a9aeaa968084cdc3630fddb957f145f';
+        // web3.eth.getTransaction(txHash, function(error, result) {
+        //     $('#txData').text(JSON.stringify(result, null, '\t'));
+        //     $('#txData').text('Stored data: ' + result.input);
+        // });
+
+    </script>
+</head>
+<body>
+    <br/>
+    <h1><b>Real Estate Token (RET)</b></h1>
+
+    Account: <span id="address"></span><br /><br />
+
+    <input type="text" id="amountOfETHToSend" size='40' placeholder="Amount of ETH to send..." />
+    <button onclick="buyRETTokens()">Buy RET tokens</button><br /><br />
+
+    Your ETH balance:
+    <span id="ETHbalance"></span><br />
+    Your RET balance:
+    <span id="RETBalance"></span><br />
+
+    <span id="txLink"></span><br />
+
+    <span id="txData"></span>
+
+</body>
+</html>
