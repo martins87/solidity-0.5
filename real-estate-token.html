@@ -144,15 +144,18 @@
         }
 
         function buyRETTokens() {
+
             // amount in Ether
-            let amount = $('#amountOfETHToSend').val()
-            let balanceInEther = web3.fromWei(balance, 'ether')
+            let amount = Number( $('#amountOfETHToSend').val() )
+
+            // account balance in Ether
+            let balanceInEther = Number( web3.fromWei(balance, 'ether') )
 
             if(!isNaN(amount)) {
                 if(amount < balanceInEther) {
-                    
-                    // contract.buyTokens(function(error, result) {
+
                     let amountInWei = web3.toWei(amount, 'ether');
+                    console.log('Amount to invest: ' + amountInWei);
 
                     let txObject = {
                         'value' : amountInWei,
