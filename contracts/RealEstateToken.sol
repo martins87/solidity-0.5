@@ -16,7 +16,7 @@ contract RealEstateToken {
     // "ERC-721" + "ERC-20"
     mapping(uint256 => mapping(address => uint256)) propertiesShares;
     
-    uint256 public properties;
+    uint256 private properties;
     
     constructor() public {
         owner = msg.sender;
