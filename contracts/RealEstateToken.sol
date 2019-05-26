@@ -33,7 +33,7 @@ contract RealEstateToken {
     function createProperty(uint _totalShares) public {
         require(msg.sender == owner);
         properties++;
-        propertiesShares[properties][msg.sender] = _totalShares;
+        propertiesShares[properties][owner] = _totalShares;
     }
     
     function sharesOf(uint property) public view returns(uint){
@@ -46,14 +46,19 @@ contract RealEstateToken {
         return propertiesShares[property][_address];
     }
     
-    function transfer(uint256 property, address _recipient, uint256 amount) public returns(bool) {
-        //require(propertiesShares[properties][msg.sender] >= amount, "Insufficient funds");
-        require(_recipient != address(0), "Transfer to the zero address");
+    function transfer(uint256 property, address recipient, uint256 amount) public returns(bool) {
+        require(propertiesShares[properties][owner] >= amount, "Insufficient funds");
+        require(recipient != address(0), "Transfer to the zero address");
         
-        propertiesShares[property][msg.sender] -= amount;
-        propertiesShares[property][_recipient] += amount;
+        propertiesShares[property][owner] = propertiesShares[property][owner].sub(amount);
+        propertiesShares[property][recipient] = propertiesShares[property][recipient].add(amount);
         
         return true;
     }
+    
+    /*
+    function buyShares(uint256 property) public payable reteurns(bool) {
+        transfer();
+    }*/
     
 }
