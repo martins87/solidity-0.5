@@ -5,8 +5,6 @@ import "./SafeMath.sol";
 contract RealEstateToken {
     using SafeMath for uint256;
     
-    uint256 public remainder;
-    
     /*
     - one Smart Contract for all properties
     - every property can have its own tokens
@@ -52,16 +50,10 @@ contract RealEstateToken {
         //require(propertiesShares[properties][msg.sender] >= amount, "Insufficient funds");
         require(_recipient != address(0), "Transfer to the zero address");
         
-        remainder = propertiesShares[property][msg.sender] - amount;
-        
         propertiesShares[property][msg.sender] -= amount;
         propertiesShares[property][_recipient] += amount;
         
         return true;
-    }
-    
-    function burnShares(uint256 amount) public returns(bool) {
-        propertiesShares[1][msg.sender] -= amount;
     }
     
 }
