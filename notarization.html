@@ -1,0 +1,97 @@
+<!doctype html>
+<html>
+<head>
+    <title>Blockchain Notarization</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <!-- <script src="packages/web3/src/Web3.js"></script> -->
+    <script src="sha256.js"></script>
+    <script>
+
+        // account address
+        var accountAddress;
+
+        // account balance
+        var balance;
+        
+        // initialize connection with MetaMask
+        window.addEventListener('load', () => {
+
+            // Modern dapp browsers...
+            if (window.ethereum) {
+                window.web3 = new Web3(ethereum);
+                try {
+                    web3.eth.sendTransaction({/* ... */});
+                } catch (error) {}
+            }
+            else if (window.web3) {
+                window.web3 = new Web3(web3.currentProvider);
+                web3.eth.sendTransaction({/* ... */});
+            }
+            else {
+                console.log('Non-Ethereum browser detected. You should consider trying MetaMask!');
+            }
+
+            // get address from MetaMask
+            web3.eth.getAccounts(function(error, result) {
+                if(error) {
+                    console.log(error);
+                } else {
+                    accountAddress = result;
+                    $('#address').text(accountAddress);
+                    console.log('Account address: ' + accountAddress);
+
+                    let acc = accountAddress+'';
+                    acc = acc.substring(2, acc.length)
+
+                    // get account balance in Ether
+                    web3.eth.getBalance(acc, function(error, res) {
+                        if(error) {
+                            console.log(error);
+                        } else {
+                            balance = res;
+                            $('#ETHbalance').text( web3.fromWei(balance, 'ether').toFixed(4) + ' Ξ');
+                        }
+                    });
+                }
+            });
+            
+        });
+
+        // 0 address: 0x0000000000000000000000000000000000000000
+        function register() {
+
+            let data = SHA256( $('#dataToRegister').val() )
+
+            let txObject = {
+                from : accountAddress + '',
+                to : accountAddress + '',
+                value : web3.toWei(0, 'ether'),
+                data : web3.toHex(data),
+                gas : 30000
+            }
+
+            console.log(txObject)
+
+            web3.eth.sendTransaction(txObject, function(error, txHash) {
+                if(!error) {
+                    console.log(txHash)
+                }
+            })
+
+        }
+
+    </script>
+</head>
+<body>
+    <br/>
+    <h1><b>Register Your Data On The Blockchain</b></h1>
+
+    <b>Account: </b><span id="address"></span><br /> 
+    <b>Balance: </b><span id="ETHbalance"></span><br /><br />
+
+    <input type="text" id="dataToRegister" size='40' placeholder="Stuff to register..." />
+    <button onclick="register()">Register</button><br /><br />
+
+</body>
+</html>
