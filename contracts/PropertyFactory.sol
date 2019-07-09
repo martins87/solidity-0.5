@@ -8,22 +8,22 @@ contract ApproveAndCallFallBack {
 }
 
 contract PropertyToken is IERC20 {
-    using SafeMath for uint;
+    using SafeMath for uint256;
 
     string public symbol;
     string public  name;
     uint8 public decimals;
-    uint256 public _totalSupply;
+    uint256 private _totalSupply;
     uint256 public tokenEthPrice;
     address payable public owner;
 
-    mapping(address => uint) balances;
-    mapping(address => mapping(address => uint)) allowed;
+    mapping(address => uint256) private balances;
+    mapping (address => mapping (address => uint256)) private _allowances;
 
     constructor(string memory _symbol, string memory _name, uint256 _initialSupply, uint256 _tokenEthPrice, address payable _owner) public {
         symbol = _symbol;
         name = _name;
-        decimals = 18;
+        decimals = 0;
         _totalSupply = _initialSupply * 10**uint(decimals);
         tokenEthPrice = _tokenEthPrice * 1 ether;
         owner = _owner;
@@ -31,8 +31,11 @@ contract PropertyToken is IERC20 {
         emit Transfer(address(0), _owner, _totalSupply);
     }
     
-    function totalSupply() public view returns (uint) {
-        return _totalSupply.sub(balances[address(0)]);
+    /**
+     * @dev See `IERC20.totalSupply`.
+     */
+    function totalSupply() public view returns (uint256) {
+        return _totalSupply;
     }
 
     function balanceOf(address tokenOwner) public view returns (uint balance) {
@@ -47,36 +50,37 @@ contract PropertyToken is IERC20 {
     }
 
     function approve(address spender, uint tokens) public returns (bool success) {
-        allowed[msg.sender][spender] = tokens;
+        _allowances[msg.sender][spender] = tokens;
         emit Approval(msg.sender, spender, tokens);
         return true;
     }
 
     function transferFrom(address from, address to, uint tokens) public returns (bool success) {
         balances[from] = balances[from].sub(tokens);
-        allowed[from][msg.sender] = allowed[from][msg.sender].sub(tokens);
+        _allowances[from][msg.sender] = _allowances[from][msg.sender].sub(tokens);
         balances[to] = balances[to].add(tokens);
         emit Transfer(from, to, tokens);
         return true;
     }
 
     function allowance(address tokenOwner, address spender) public view returns (uint remaining) {
-        return allowed[tokenOwner][spender];
+        return _allowances[tokenOwner][spender];
     }
 
     function approveAndCall(address spender, uint tokens, bytes memory data) public returns (bool success) {
-        allowed[msg.sender][spender] = tokens;
+        _allowances[msg.sender][spender] = tokens;
         emit Approval(msg.sender, spender, tokens);
         ApproveAndCallFallBack(spender).receiveApproval(msg.sender, tokens, address(this), data);
         return true;
     }
     
     function buyTokens() public payable {
-        // uint256 exchangeRate = 100;
-        // uint256 tokens = exchangeRate.mul(msg.value).div(1 ether);
-        uint256 tokens = 100 * (msg.value / 1 ether);
-        
         require(msg.sender != owner);
+        
+        uint256 exchangeRate = 500;
+        uint256 tokens = exchangeRate.mul(msg.value).div(1 ether);
+        
+        require(tokens > 0);
         require(tokens <= _totalSupply);
         
         transfer(msg.sender, tokens);
