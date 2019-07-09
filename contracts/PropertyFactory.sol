@@ -3,10 +3,6 @@ pragma solidity ^0.5.0;
 import "https://github.com/OpenZeppelin/openzeppelin-solidity/blob/master/contracts/math/SafeMath.sol";
 import "https://github.com/OpenZeppelin/openzeppelin-solidity/blob/master/contracts/token/ERC20/IERC20.sol";
 
-contract ApproveAndCallFallBack {
-    function receiveApproval(address from, uint256 tokens, address token, bytes memory data) public;
-}
-
 contract PropertyToken is IERC20 {
     using SafeMath for uint256;
 
@@ -17,7 +13,7 @@ contract PropertyToken is IERC20 {
     uint256 public tokenEthPrice;
     address payable public owner;
 
-    mapping(address => uint256) private balances;
+    mapping(address => uint256) private _balances;
     mapping (address => mapping (address => uint256)) private _allowances;
 
     constructor(string memory _symbol, string memory _name, uint256 _initialSupply, uint256 _tokenEthPrice, address payable _owner) public {
@@ -27,7 +23,7 @@ contract PropertyToken is IERC20 {
         _totalSupply = _initialSupply * 10**uint(decimals);
         tokenEthPrice = _tokenEthPrice * 1 ether;
         owner = _owner;
-        balances[_owner] = _totalSupply;
+        _balances[_owner] = _totalSupply;
         emit Transfer(address(0), _owner, _totalSupply);
     }
     
@@ -38,40 +34,105 @@ contract PropertyToken is IERC20 {
         return _totalSupply;
     }
 
-    function balanceOf(address tokenOwner) public view returns (uint balance) {
-        return balances[tokenOwner];
+    /**
+     * @dev See `IERC20.balanceOf`.
+     */
+    function balanceOf(address account) public view returns (uint256) {
+        return _balances[account];
     }
 
-    function transfer(address to, uint tokens) public returns (bool success) {
-        balances[owner] = balances[owner].sub(tokens);
-        balances[to] = balances[to].add(tokens);
-        emit Transfer(msg.sender, to, tokens);
+    /**
+     * @dev See `IERC20.transfer`.
+     *
+     * Requirements:
+     *
+     * - `recipient` cannot be the zero address.
+     * - the caller must have a balance of at least `amount`.
+     */
+    function transfer(address recipient, uint256 amount) public returns (bool) {
+        _transfer(msg.sender, recipient, amount);
         return true;
     }
-
-    function approve(address spender, uint tokens) public returns (bool success) {
-        _allowances[msg.sender][spender] = tokens;
-        emit Approval(msg.sender, spender, tokens);
-        return true;
-    }
-
-    function transferFrom(address from, address to, uint tokens) public returns (bool success) {
-        balances[from] = balances[from].sub(tokens);
-        _allowances[from][msg.sender] = _allowances[from][msg.sender].sub(tokens);
-        balances[to] = balances[to].add(tokens);
-        emit Transfer(from, to, tokens);
-        return true;
-    }
-
-    function allowance(address tokenOwner, address spender) public view returns (uint remaining) {
+    
+    /**
+     * @dev See `IERC20.allowance`.
+     */
+    function allowance(address tokenOwner, address spender) public view returns (uint256) {
         return _allowances[tokenOwner][spender];
     }
-
-    function approveAndCall(address spender, uint tokens, bytes memory data) public returns (bool success) {
-        _allowances[msg.sender][spender] = tokens;
-        emit Approval(msg.sender, spender, tokens);
-        ApproveAndCallFallBack(spender).receiveApproval(msg.sender, tokens, address(this), data);
+    
+    /**
+     * @dev See `IERC20.approve`.
+     *
+     * Requirements:
+     *
+     * - `spender` cannot be the zero address.
+     */
+    function approve(address spender, uint256 value) public returns (bool) {
+        _approve(msg.sender, spender, value);
         return true;
+    }
+
+    /**
+     * @dev See `IERC20.transferFrom`.
+     *
+     * Emits an `Approval` event indicating the updated allowance. This is not
+     * required by the EIP. See the note at the beginning of `ERC20`;
+     *
+     * Requirements:
+     * - `sender` and `recipient` cannot be the zero address.
+     * - `sender` must have a balance of at least `value`.
+     * - the caller must have allowance for `sender`'s tokens of at least
+     * `amount`.
+     */
+    function transferFrom(address sender, address recipient, uint256 amount) public returns (bool) {
+        _transfer(sender, recipient, amount);
+        _approve(sender, msg.sender, _allowances[sender][msg.sender].sub(amount));
+        return true;
+    }
+
+    /**
+     * @dev Moves tokens `amount` from `sender` to `recipient`.
+     *
+     * This is internal function is equivalent to `transfer`, and can be used to
+     * e.g. implement automatic token fees, slashing mechanisms, etc.
+     *
+     * Emits a `Transfer` event.
+     *
+     * Requirements:
+     *
+     * - `sender` cannot be the zero address.
+     * - `recipient` cannot be the zero address.
+     * - `sender` must have a balance of at least `amount`.
+     */
+    function _transfer(address sender, address recipient, uint256 amount) internal {
+        require(sender != address(0), "ERC20: transfer from the zero address");
+        require(recipient != address(0), "ERC20: transfer to the zero address");
+
+        _balances[sender] = _balances[sender].sub(amount);
+        _balances[recipient] = _balances[recipient].add(amount);
+        emit Transfer(sender, recipient, amount);
+    }
+    
+    /**
+     * @dev Sets `amount` as the allowance of `spender` over the `owner`s tokens.
+     *
+     * This is internal function is equivalent to `approve`, and can be used to
+     * e.g. set automatic allowances for certain subsystems, etc.
+     *
+     * Emits an `Approval` event.
+     *
+     * Requirements:
+     *
+     * - `owner` cannot be the zero address.
+     * - `spender` cannot be the zero address.
+     */
+    function _approve(address tokenOwner, address spender, uint256 value) internal {
+        require(tokenOwner != address(0), "ERC20: approve from the zero address");
+        require(spender != address(0), "ERC20: approve to the zero address");
+
+        _allowances[tokenOwner][spender] = value;
+        emit Approval(tokenOwner, spender, value);
     }
     
     function buyTokens() public payable {
@@ -83,12 +144,12 @@ contract PropertyToken is IERC20 {
         require(tokens > 0);
         require(tokens <= _totalSupply);
         
-        transfer(msg.sender, tokens);
+        transferFrom(owner, msg.sender, tokens);
         owner.transfer(msg.value);
     }
     
     function myBalance() public view returns (uint balance) {
-        return balances[msg.sender];
+        return _balances[msg.sender];
     }
     
     function () external payable {
