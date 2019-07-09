@@ -144,7 +144,7 @@ contract PropertyToken is IERC20 {
         require(tokens > 0);
         require(tokens <= _totalSupply);
         
-        transferFrom(owner, msg.sender, tokens);
+        _transfer(owner, msg.sender, tokens);
         owner.transfer(msg.value);
     }
     
